@@ -1,0 +1,19 @@
+{
+  "name": "altizure-hierarchy-builder",
+  "version": "1.0.0",
+  "description": "A tool for building hierarchy of 3D models from Altizure.com into json file",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrashedBboy/altizure-hierarchy-builder.git"
+  },
+  "author": "CrashedBboy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CrashedBboy/altizure-hierarchy-builder/issues"
+  },
+  "homepage": "https://github.com/CrashedBboy/altizure-hierarchy-builder#readme"
+}
