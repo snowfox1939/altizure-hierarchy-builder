@@ -4,7 +4,7 @@
   "description": "A tool for building hierarchy of 3D models from Altizure.com into json file",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
