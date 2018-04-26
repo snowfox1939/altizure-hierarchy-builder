@@ -97,3 +97,17 @@ level 8
     ]
 }
 ```
+
+## Settings
+
+Setting values will be retrieved from `settings.json`
+  
+sample settings:
+
+```json
+{
+    "directory": "models path",
+    "rootLevel": "level from which it starts, defaults to 0",
+    "leafLevel": "level of which it ends, defaults to 8"
+}
+```
