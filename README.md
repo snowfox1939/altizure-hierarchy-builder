@@ -10,31 +10,31 @@ level 0 ->each node has 1*2 children
 0
 0
 
-level 1 ->each node has 2*2 children
+level 1 ->each node has 4 children
 0, 128
 0
 
-level 2 ->each node has 2*4 children
+level 2 ->each node has 4 children
 0, 64, 128, 192
 0, 64
 
-level 3 ->each node has 2*8 children
+level 3 ->each node has 4 children
 0, 32, 64, 96, 128, 160, 192, 224
 0, 32, 64, 96
 
-level 4 ->each node has 2*16 children
+level 4 ->each node has 4 children
 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240
 0, 16, 32, 48, 64, 80, 96, 112
 
-level 5 ->each node has 2*32 children
+level 5 ->each node has 4 children
 0, 8, 16, 24, 32, 40, ... , 216, 224, 232, 240, 248
 0, 8, 16, 24, 32, 40, ... , 88, 96, 104, 112, 120
 
-level 6 ->each node has 2*64 children
+level 6 ->each node has 4 children
 0, 4, 8, 12, 16, ..., 244, 248, 252
 0, 4, 8, 12, 16, 20, ..., 124
 
-level 7 ->each node has 2*128 children
+level 7 ->each node has 4 children
 0, 2, 4, 6, 8, ....., 248, 250, 252, 254
 0, 2, 4, 6, ... , 124, 126
 

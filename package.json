@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/CrashedBboy/altizure-hierarchy-builder/issues"
   },
-  "homepage": "https://github.com/CrashedBboy/altizure-hierarchy-builder#readme"
+  "homepage": "https://github.com/CrashedBboy/altizure-hierarchy-builder#readme",
+  "dependencies": {
+    "uglify-js": "^3.3.23"
+  }
 }
