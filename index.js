@@ -9,22 +9,14 @@ if (fs.existsSync('./settings.json')) {
         process.exit(0);
     }
 
-    if (settings.rootLevel < 0) {
+    if (settings.rootLevel === undefined || settings.rootLevel < 0) {
         error('"rootLevel" is invalid, it have to be greater than or equal to 0');
         process.exit(0);
     }
 
-    if (settings.rootLevel === undefined) {
-        rootLevel = 0;
-    }
-
-    if (settings.leafLevel > 8) {
+    if (settings.leafLevel === undefined || settings.leafLevel > 8) {
         error('"leafLevel" is invalid, it have to be less than 9');
         process.exit(0);
-    }
-
-    if (settings.leafLevel === undefined) {
-        leafLevel = 8;
     }
 
     if (settings.rootLevel > settings.leafLevel) {
@@ -39,6 +31,7 @@ if (fs.existsSync('./settings.json')) {
 
 }
 
+// get all OBJ filenames and save them
 var models = new Array();
 
 fs.readdirSync(settings.directory).forEach(function (filename) {
@@ -67,11 +60,15 @@ for (let i = settings.rootLevel; i <= settings.leafLevel; i++) {
     });
 }
 
+var progressCounter = 0;
+var nodeCounter = 0;
+process.stdout.write('0%..');
+
 var hierarchy = {
     models: []
 };
 
-// first, create top level nodes so we can recurse later
+// create top level nodes so we can recursive later
 let rootNodeAmount = settings.rootLevel == 0 ? 1 : Math.pow(2, 1 + (settings.rootLevel - 1) * 2);
 for (let i = 0; i < rootNodeAmount; i++) {
 
@@ -91,10 +88,17 @@ for (let i = 0; i < rootNodeAmount; i++) {
             filename: filename,
             children: []
         });
+
+        nodeCounter += 1;
+        if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
+
+            progressCounter += 0.1;
+            process.stdout.write(Math.floor(progressCounter * 100) + '%..');
+        }
     }
 }
 
-// then, iterate root nodes and start recursive
+// then, iterate root nodes and start recursion
 hierarchy.models.forEach(giveBirth);
 
 function giveBirth(node) {
@@ -129,15 +133,23 @@ function giveBirth(node) {
                 filename: filename,
                 children: []
             });
+
+            nodeCounter += 1;
+            if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
+
+                progressCounter += 0.1;
+                process.stdout.write(Math.floor(progressCounter * 100) + '%..');
+            }
         }
     }
 
     node.children.forEach(giveBirth);
 }
 
-
-
-fs.writeFileSync('./output.json', JSONC.compress(JSON.stringify(hierarchy)));
+// write into file
+let fileContent = settings.compress ? JSONC.compress(JSON.stringify(hierarchy)) : JSON.stringify(hierarchy, null, 2);
+fs.writeFileSync('./altizure_hierarchy.json', fileContent);
+process.stdout.write('Done\n');
 
 function error(message) {
 
