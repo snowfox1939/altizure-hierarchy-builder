@@ -65,6 +65,7 @@ var nodeCounter = 0;
 process.stdout.write('0%..');
 
 var hierarchy = {
+    basePath: settings.directory,
     models: []
 };
 
