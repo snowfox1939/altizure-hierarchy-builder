@@ -9,18 +9,8 @@ if (fs.existsSync('./settings.json')) {
         process.exit(0);
     }
 
-    if (settings.rootLevel === undefined || settings.rootLevel < 0) {
-        error('"rootLevel" is invalid, it have to be greater than or equal to 0');
-        process.exit(0);
-    }
-
-    if (settings.leafLevel === undefined || settings.leafLevel > 8) {
-        error('"leafLevel" is invalid, it have to be less than 9');
-        process.exit(0);
-    }
-
-    if (settings.rootLevel > settings.leafLevel) {
-        error('"rootLevel" should be less than or equal to "leafLevel"');
+    if (settings.level === undefined || settings.level < 0) {
+        error('"level" is invalid, it have to be greater than or equal to 0');
         process.exit(0);
     }
 
@@ -45,18 +35,12 @@ fs.readdirSync(settings.directory).forEach(function (filename) {
 // setup levels' property
 var levels = new Array();
 
-for (let i = settings.rootLevel; i <= settings.leafLevel; i++) {
+for (let i = 0; i <= settings.level; i++) {
 
     levels.push({
         level: i,
-        upper: {
-            interval: Math.pow(2, 8 - i),
-            layer: Math.pow(2, i)
-        },
-        lower: {
-            interval: Math.pow(2, 8 - i),
-            layer: i == 0 ? 1 : Math.pow(2, i - 1)
-        }
+        interval: Math.pow(2, settings.level - i),
+        layer: Math.pow(2, i)
     });
 }
 
@@ -69,33 +53,26 @@ var hierarchy = {
     models: []
 };
 
-// create top level nodes so we can recursive later
-let rootNodeAmount = settings.rootLevel == 0 ? 1 : Math.pow(2, 1 + (settings.rootLevel - 1) * 2);
-for (let i = 0; i < rootNodeAmount; i++) {
+// create top level node so we can recursive later
 
-    let levelInfo = getLevelInfomation(settings.rootLevel);
+let filename = 'tile_0_0_0_tex.obj';
+// "tex" is a custom suffix, you can modify to suit your model
 
-    let upperPartition = Math.floor(i / levelInfo.lower.layer) * levelInfo.upper.interval;
-    let lowerPartition = (i % levelInfo.lower.layer) * levelInfo.lower.interval;
+if (models.indexOf(filename) != -1) {
 
-    let filename = 'tile_' + settings.rootLevel + '_' + upperPartition + '_' + lowerPartition + '_tex.obj';
+    hierarchy.models.push({
+        level: 0,
+        x: 0,
+        y: 0,
+        filename: filename,
+        children: []
+    });
 
-    if (models.indexOf(filename) != -1) {
+    nodeCounter += 1;
+    if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
 
-        hierarchy.models.push({
-            level: settings.rootLevel,
-            upperPartition: upperPartition,
-            lowerPartition: lowerPartition,
-            filename: filename,
-            children: []
-        });
-
-        nodeCounter += 1;
-        if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
-
-            progressCounter += 0.1;
-            process.stdout.write(Math.floor(progressCounter * 100) + '%..');
-        }
+        progressCounter += 0.1;
+        process.stdout.write(Math.floor(progressCounter * 100) + '%..');
     }
 }
 
@@ -104,44 +81,63 @@ hierarchy.models.forEach(giveBirth);
 
 function giveBirth(node) {
 
-    if (node.level == settings.leafLevel) {
+    if (node.level == settings.level - 4) {
         return;
     }
 
-    let levelInfo = getLevelInfomation(node.level);
+    let nodeLevelInfo = getLevelInfomation(node.level);
 
-    let order = Math.floor(node.upperPartition / levelInfo.upper.interval) * levelInfo.lower.layer
-        + Math.floor(node.lowerPartition / levelInfo.lower.interval);
+    let level = node.level + 1;
+    let interval = nodeLevelInfo.interval / 2;
 
-    let childLevel = node.level + 1;
+    let filename, x, y;
+    
+    // child 0
+    x = node.x;
+    y = node.y;
+    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
 
-    for (let i = 0; i < 4; i++) {
-        let childOrder = order * 4 + i;
+    if (models.indexOf(filename) != -1) {
 
-        let childLevelInfo = getLevelInfomation(childLevel);
+        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
 
-        let upperPartition = Math.floor(childOrder / childLevelInfo.lower.layer) * childLevelInfo.upper.interval;
-        let lowerPartition = (childOrder % childLevelInfo.lower.layer) * childLevelInfo.lower.interval;
+        modelCountIncrease();
+    }
 
-        let filename = 'tile_' + childLevel + '_' + upperPartition + '_' + lowerPartition + '_tex.obj';
+    // child 1
+    x = node.x + interval;
+    y = node.y;
+    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
 
-        if (models.indexOf(filename) != -1) {
+    if (models.indexOf(filename) != -1) {
 
-            node.children.push({
-                level: childLevel,
-                upperPartition: upperPartition,
-                lowerPartition: lowerPartition,
-                filename: filename,
-                children: []
-            });
+        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
 
-            nodeCounter += 1;
-            if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
+        modelCountIncrease();
+    }
 
-                progressCounter += 0.1;
-                process.stdout.write(Math.floor(progressCounter * 100) + '%..');
-            }
-        }
+    // child 2
+    x = node.x;
+    y = node.y + interval;
+    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
+
+    if (models.indexOf(filename) != -1) {
+
+        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
+
+        modelCountIncrease();
+    }
+
+    // child 3
+    x = node.x + interval;
+    y = node.y + interval;
+    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
+
+    if (models.indexOf(filename) != -1) {
+
+        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
+
+        modelCountIncrease();
     }
 
     node.children.forEach(giveBirth);
@@ -162,5 +158,14 @@ function getLevelInfomation(level) {
         if (levels[i].level == level) {
             return levels[i];
         }
+    }
+}
+
+function modelCountIncrease() {
+    nodeCounter += 1;
+    if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
+
+        progressCounter += 0.1;
+        process.stdout.write(Math.floor(progressCounter * 100) + '%..');
     }
 }
