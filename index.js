@@ -81,7 +81,7 @@ hierarchy.models.forEach(giveBirth);
 
 function giveBirth(node) {
 
-    if (node.level == settings.level - 4) {
+    if (node.level == settings.level) {
         return;
     }
 
