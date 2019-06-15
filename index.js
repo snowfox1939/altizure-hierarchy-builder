@@ -184,6 +184,8 @@ var buildHierarchy = function (settings) {
                             parentList = parent.children;
                             parentLevel = parentList[0].level;
                         }
+
+                        break;
                     }
                 }
             }
