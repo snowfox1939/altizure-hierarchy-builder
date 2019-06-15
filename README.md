@@ -13,7 +13,7 @@ let hierarchy = buildHierarchy({
 
 ## Sample return value
 
-please check sample output in `sample-hierarchy.json`
+please check sample output in [sample-hierarchy.json](https://github.com/CrashedBboy/altizure-hierarchy-builder/blob/master/sample-hierarchy.json)
 
 * `model` list
   - tree hierarchy of all tiles
