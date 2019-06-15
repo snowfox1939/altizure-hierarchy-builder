@@ -1,171 +1,224 @@
 var fs = require('fs');
-var JSONC = require('jsoncomp');
 
-if (fs.existsSync('./settings.json')) {
-    var settings = require('./settings.json');
-
+// parameters: settings.directory [, settings.compress]
+var buildHierarchy = function (settings) {
     if (!settings.directory || !fs.existsSync(settings.directory)) {
-        error('please provide a valid directory path in "settings.json"');
-        process.exit(0);
-    }
-
-    if (settings.level === undefined || settings.level < 0) {
-        error('"level" is invalid, it have to be greater than or equal to 0');
-        process.exit(0);
-    }
-
-} else {
-
-    error('"settings.json" not found.');
-    process.exit(0);
-
-}
-
-// get all OBJ filenames and save them
-var models = new Array();
-
-fs.readdirSync(settings.directory).forEach(function (filename) {
-
-    if (filename.indexOf('.obj') != -1) {
-
-        models.push(filename);
-    }
-});
-
-// setup levels' property
-var levels = new Array();
-
-for (let i = 0; i <= settings.level; i++) {
-
-    levels.push({
-        level: i,
-        interval: Math.pow(2, settings.level - i),
-        layer: Math.pow(2, i)
-    });
-}
-
-var progressCounter = 0;
-var nodeCounter = 0;
-process.stdout.write('0%..');
-
-var hierarchy = {
-    basePath: settings.directory,
-    models: []
-};
-
-// create top level node so we can recursive later
-
-let filename = 'tile_0_0_0_tex.obj';
-// "tex" is a custom suffix, you can modify to suit your model
-
-if (models.indexOf(filename) != -1) {
-
-    hierarchy.models.push({
-        level: 0,
-        x: 0,
-        y: 0,
-        filename: filename,
-        children: []
-    });
-
-    nodeCounter += 1;
-    if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
-
-        progressCounter += 0.1;
-        process.stdout.write(Math.floor(progressCounter * 100) + '%..');
-    }
-}
-
-// then, iterate root nodes and start recursion
-hierarchy.models.forEach(giveBirth);
-
-function giveBirth(node) {
-
-    if (node.level == settings.level) {
+        error('directory path is invalid');
         return;
     }
-
-    let nodeLevelInfo = getLevelInfomation(node.level);
-
-    let level = node.level + 1;
-    let interval = nodeLevelInfo.interval / 2;
-
-    let filename, x, y;
     
-    // child 0
-    x = node.x;
-    y = node.y;
-    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
+    // get all OBJ filenames and save them
+    var files = new Array();
+    
+    fs.readdirSync(settings.directory).forEach(function (filename) {
+    
+        if (filename.indexOf('.obj') != -1) {
+    
+            files.push(filename);
+        }
+    });
+    
+    // setup levels' property
+    var levels = new Array();
+    var maxLevel = 0;
 
-    if (models.indexOf(filename) != -1) {
+    files.forEach((file) => {
 
-        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
+        // example file name: tile_5_0_8_tex.obj
 
-        modelCountIncrease();
+        let chunks = file.split('_');
+
+        let level = parseInt(chunks[1]);
+        let x = parseInt(chunks[2]);
+        let y = parseInt(chunks[3]);
+
+        tile = {
+            filename: file,
+            level: level,
+            x: x,
+            y: y
+        };
+
+        if (level > maxLevel) {
+
+            maxLevel = level;
+        }
+
+        let stored = false;
+
+        for (let i = 0; i < levels.length; i++) {
+
+            if (levels[i].level == level) {
+
+                // search if x boundary has been stored in boundary list
+                let boundaryStored = false;
+
+                for (let j = 0; j < levels[i].xBoundaries.length; j++) {
+
+                    if (levels[i].xBoundaries[j] == x) {
+
+                        boundaryStored = true;
+                        break;
+                    }
+                }
+
+                if (!boundaryStored) {
+
+                    // save boundaries
+                    levels[i].xBoundaries.push(x);
+                }
+
+                boundaryStored = false;
+
+                for (let j = 0; j < levels[i].yBoundaries.length; j++) {
+
+                    if (levels[i].yBoundaries[j] == y) {
+
+                        boundaryStored = true;
+                        break;
+                    }
+                }
+
+                if (!boundaryStored) {
+
+                    // save boundaries
+                    levels[i].yBoundaries.push(y);
+                }
+
+                levels[i].tiles.push(tile);
+
+                stored = true;
+                break;
+            }
+        }
+
+        if (!stored) {
+
+            levels.push({
+                level: level,
+                xBoundaries: [x],
+                yBoundaries: [y],
+                tiles: [tile]
+            });
+        }
+    });
+    
+    // tree hierarchy
+    var hierarchy = {
+        basePath: settings.directory,
+        models: [],
+        levels: []
+    };
+
+    // push level 0 tiles into hierarchy (as root of hierarchy tree)
+    getLevelInfomation(0).tiles.forEach((tile) => {
+
+        tile.children = [];
+        hierarchy.models.push(tile);
+    });
+
+    for (let i = 1; i <= maxLevel; i++) {
+
+        getLevelInfomation(i).tiles.forEach((tile) => {
+
+            // list of tiles of current level
+            let parentList = hierarchy.models;
+
+            // current level
+            let parentLevel = parentList[0].level;
+
+            // tile's direct parent tile
+            let directParentTile = null;
+
+            // boolean to indicate parent of the tile cannot be found
+            let parentNotFound = false;
+
+            while (parentLevel < i) {
+
+                let xError = Infinity;
+                let yError = Infinity;
+                let xBoundary = null;
+                let yBoundary = null;
+
+                parentLevelInfo = getLevelInfomation(parentLevel);
+
+                // search correct x location of parent for the tile
+                parentLevelInfo.xBoundaries.forEach((bound) => {
+
+                    if ((xError > 0) && (bound <= tile.x) && ((tile.x - bound) < xError)) {
+
+                        xError = tile.x - bound;
+                        xBoundary = bound;
+                    }
+                });
+
+                // search correct y location of parent for the tile
+                parentLevelInfo.yBoundaries.forEach((bound) => {
+
+                    if ((yError > 0) && (bound <= tile.y) && ((tile.y - bound) < yError)) {
+
+                        yError = tile.y - bound;
+                        yBoundary = bound;
+                    }
+                });
+
+                if (xBoundary === null || yBoundary === null) {
+
+                    parentNotFound = true;
+                    break;
+                }
+
+                for (let j = 0; j < parentList.length; j++) {
+
+                    let parent = parentList[j];
+
+                    if ((parent.x == xBoundary) && (parent.y == yBoundary)) {
+
+                        if (parentLevel == (i - 1)) {
+
+                            directParentTile = parent;
+                            parentLevel += 1;
+                        
+                        } else {
+
+                            parentList = parent.children;
+                            parentLevel = parentList[0].level;
+                        }
+                    }
+                }
+            }
+
+            if (!parentNotFound && directParentTile) {
+
+                tile.children = [];
+
+                directParentTile.children.push(tile);
+            }
+        });
     }
 
-    // child 1
-    x = node.x + interval;
-    y = node.y;
-    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
-
-    if (models.indexOf(filename) != -1) {
-
-        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
-
-        modelCountIncrease();
-    }
-
-    // child 2
-    x = node.x;
-    y = node.y + interval;
-    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
-
-    if (models.indexOf(filename) != -1) {
-
-        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
-
-        modelCountIncrease();
-    }
-
-    // child 3
-    x = node.x + interval;
-    y = node.y + interval;
-    filename = 'tile_' + level + '_' + x + '_' + y + '_tex.obj';
-
-    if (models.indexOf(filename) != -1) {
-
-        node.children.push({ level: level, x: x, y: y, filename: filename, children: [] });
-
-        modelCountIncrease();
-    }
-
-    node.children.forEach(giveBirth);
-}
-
-// write into file
-let fileContent = settings.compress ? JSONC.compress(JSON.stringify(hierarchy)) : JSON.stringify(hierarchy, null, 2);
-fs.writeFileSync('./altizure_hierarchy.json', fileContent);
-process.stdout.write('Done\n');
-
-function error(message) {
-
-    console.log('\x1b[41m%s\x1b[0m', message);
-}
-
-function getLevelInfomation(level) {
     for (let i = 0; i < levels.length; i++) {
-        if (levels[i].level == level) {
-            return levels[i];
+        hierarchy.levels.push({
+            level: levels[i].level,
+            xBoundaries: levels[i].xBoundaries,
+            yBoundaries: levels[i].yBoundaries
+        });
+    }
+
+    return hierarchy;
+    
+    function error(message) {
+    
+        console.log('\x1b[41m%s\x1b[0m', message);
+    }
+    
+    function getLevelInfomation(level) {
+        for (let i = 0; i < levels.length; i++) {
+            if (levels[i].level == level) {
+                return levels[i];
+            }
         }
     }
 }
 
-function modelCountIncrease() {
-    nodeCounter += 1;
-    if ((nodeCounter / models.length) >= (progressCounter + 0.1)) {
-
-        progressCounter += 0.1;
-        process.stdout.write(Math.floor(progressCounter * 100) + '%..');
-    }
-}
+module.exports = buildHierarchy;

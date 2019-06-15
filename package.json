@@ -16,7 +16,5 @@
     "url": "https://github.com/CrashedBboy/altizure-hierarchy-builder/issues"
   },
   "homepage": "https://github.com/CrashedBboy/altizure-hierarchy-builder#readme",
-  "dependencies": {
-    "jsoncomp": "^1.6.1"
-  }
+  "dependencies": {}
 }
